@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Edit, Trash2, Search, Plus, Upload, X } from 'lucide-react';
+import { Edit, Trash2, Search, Plus, Upload, X, Download, FileSpreadsheet } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { Course } from '../types';
@@ -12,6 +12,7 @@ export default function CourseManagement() {
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   
   // Form state
@@ -38,6 +39,26 @@ export default function CourseManagement() {
 
     return () => unsubscribe();
   }, []);
+
+  const handleDownloadTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([
+      {
+        "STT": 1,
+        "Tên khóa học": "Khóa học mẫu 1 (Vui lòng xóa dòng này khi nhập)",
+        "Giảng viên/Người chia sẻ": "Nguyễn Văn A",
+        "Link khóa học": "https://link-khoa-hoc-1.com"
+      },
+      {
+        "STT": 2,
+        "Tên khóa học": "Khóa học mẫu 2",
+        "Giảng viên/Người chia sẻ": "Trần Thị B",
+        "Link khóa học": "https://link-khoa-hoc-2.com"
+      }
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Danh_Sach_Khoa_Hoc");
+    XLSX.writeFile(wb, "Mau_nhap_lieu_khoa_hoc.xlsx");
+  };
 
   const handleOpenModal = (course?: Course) => {
     if (course) {
@@ -134,6 +155,7 @@ export default function CourseManagement() {
                 }
             }
             alert("Import Excel thành công!");
+            setIsImportModalOpen(false);
         } catch (error) {
             console.error("Error importing excel:", error);
             alert("Có lỗi xảy ra khi import!");
@@ -164,7 +186,7 @@ export default function CourseManagement() {
             />
           </div>
           <button 
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setIsImportModalOpen(true)}
             className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm"
           >
             <Upload className="w-4 h-4" />
@@ -239,6 +261,51 @@ export default function CourseManagement() {
           )}
         </div>
       </div>
+
+      {/* Modal Import Excel */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+              <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-green-600" /> Nhập từ Excel
+              </h3>
+              <button onClick={() => setIsImportModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 flex flex-col gap-5">
+              <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm leading-relaxed border border-blue-100">
+                Vui lòng tải file mẫu về, nhập liệu theo đúng định dạng các cột để hệ thống có thể nhận diện chính xác. Không thay đổi tên hoặc thứ tự các cột tiêu đề.
+              </div>
+              
+              <button 
+                type="button"
+                onClick={handleDownloadTemplate}
+                className="flex items-center justify-center gap-2 bg-white border-2 border-green-600 text-green-600 px-4 py-3 rounded-xl font-semibold hover:bg-green-50 transition-colors"
+              >
+                <Download className="w-5 h-5" />
+                Tải file mẫu (.xlsx)
+              </button>
+
+              <div className="relative flex items-center justify-center py-2">
+                <div className="absolute border-t border-gray-200 w-full"></div>
+                <div className="relative bg-white px-4 text-sm text-gray-400 font-medium">Hoặc</div>
+              </div>
+
+              <button 
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-sm"
+              >
+                <Upload className="w-5 h-5" />
+                Chọn file để tải lên
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Cập nhật */}
       {isModalOpen && (
