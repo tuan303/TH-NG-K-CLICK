@@ -6,13 +6,30 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Enable trust proxy so Express can read forwarding headers accurately
+  app.set('trust proxy', true);
+
   // OAuth Endpoints
 
   // Helper to get redirect URI matching the request host
   function getRedirectUri(req: express.Request) {
-    const host = req.get("host") || "";
-    // If it's a *.run.app URL, force HTTPS
-    const protocol = host.includes("run.app") ? "https" : "http";
+    // 1. If APP_URL env is set (and not the template placeholder), use it as high priority
+    if (process.env.APP_URL && process.env.APP_URL !== "MY_APP_URL" && !process.env.APP_URL.includes("PLACEHOLDER") && process.env.APP_URL.startsWith("http")) {
+      const base = process.env.APP_URL.replace(/\/$/, "");
+      return `${base}/auth/callback`;
+    }
+
+    // 2. Read from proxy headers for dynamic environments (like custom Vercel/Cloud Run deployments)
+    const forwardedHost = req.headers["x-forwarded-host"] as string;
+    const forwardedProto = req.headers["x-forwarded-proto"] as string || (forwardedHost?.includes("run.app") || forwardedHost?.includes("vercel.app") ? "https" : "http");
+
+    if (forwardedHost) {
+      return `${forwardedProto}://${forwardedHost}/auth/callback`;
+    }
+
+    // 3. Fallback to host header
+    const host = req.get("host") || "localhost:3000";
+    const protocol = host.includes("run.app") || host.includes("vercel.app") || req.secure ? "https" : "http";
     return `${protocol}://${host}/auth/callback`;
   }
 
