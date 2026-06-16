@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import UserScreen from './components/UserScreen';
 import AdminScreen from './components/AdminScreen';
 import { auth, microsoftProvider } from './firebase';
-import { signInWithPopup, User, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, User, signOut, onAuthStateChanged } from 'firebase/auth';
 import { BookOpen, LogOut } from 'lucide-react';
 
 export default function App() {
@@ -16,6 +16,11 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    getRedirectResult(auth).catch((error) => {
+      console.error("Redirect login error:", error);
+      alert(`Lỗi đăng nhập: ${error.message}`);
+    });
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -30,8 +35,11 @@ export default function App() {
       console.error("Lỗi đăng nhập MS:", error);
       if (error.code === 'auth/unauthorized-domain') {
         alert(`Lỗi: Tên miền chưa được cấp phép.\nVui lòng truy cập Firebase Console -> Authentication -> Settings -> Authorized domains.\nThêm tên miền sau vào danh sách: ${window.location.hostname}`);
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        alert("Bạn đã đóng cửa sổ đăng nhập trước khi hoàn tất.\nVui lòng thử đăng nhập lại. Nếu cửa sổ không hiện ra, hãy kiểm tra trình chặn cửa sổ bật lên (popup blocker) trên trình duyệt.");
+      } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/popup-blocked') {
+        // Fallback to redirect if popup is blocked or closed abruptly
+        signInWithRedirect(auth, microsoftProvider).catch((e) => {
+           alert("Lỗi chuyển hướng: " + e.message);
+        });
       } else {
         alert(`Đăng nhập thất bại.\nMã lỗi: ${error.code}\nChi tiết: ${error.message}\n\nVui lòng kiểm tra lại cấu hình SSO (Entra ID Client ID/Secret, Redirect URI, hoặc Quyền truy cập).`);
       }

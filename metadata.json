@@ -1,6 +1,6 @@
 {
-  "name": "EduTrack App",
-  "description": "A demo mobile app interface with User and Admin screens for course management.",
+  "name": "EduTrack",
+  "description": "Hệ thống quản lý tài nguyên học tập của Ngôi Sao Hoàng Mai.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
