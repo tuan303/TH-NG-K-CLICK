@@ -1,24 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Menu, UserCircle, BarChart2, BookOpen, Trophy, 
   LayoutDashboard, BookText, Users, Settings, Edit, Trash2, 
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
   Search, Bell
 } from 'lucide-react';
-import { adminSummaryCards, adminCourses } from '../data';
 import CourseManagement from './CourseManagement';
+import { db } from '../firebase';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { Course } from '../types';
 
 export default function AdminScreen() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'courses'>('courses');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, 'courses'), orderBy('stt', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const coursesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Course[];
+      setCourses(coursesData);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const totalClicks = courses.reduce((acc, course) => acc + (course.clicks || 0), 0);
+  const activeCourses = courses.length;
+  const topCourseObj = courses.reduce((prev, current) => {
+    if (!prev) return current;
+    return ((prev.clicks || 0) > (current.clicks || 0)) ? prev : current;
+  }, null as Course | null);
+  
+  const topCourseTitle = topCourseObj && topCourseObj.clicks > 0 ? topCourseObj.title : 'Chưa có dữ liệu';
+  const topCourseClicks = topCourseObj ? (topCourseObj.clicks || 0) : 0;
 
   return (
     <div className="flex flex-col md:flex-row h-full w-full bg-[#f0f4f9] font-sans">
       
       {/* Desktop Sidebar (hidden on mobile) */}
       <div className="hidden md:flex flex-col w-64 bg-[#1554A1] text-white shadow-xl z-20 shrink-0">
-        <div className="flex items-center gap-3 px-6 py-8 border-b border-blue-800">
-          <BookOpen className="w-8 h-8" />
-          <span className="font-bold text-2xl tracking-tight">AdminPanel</span>
+        <div className="flex items-center px-6 py-6 border-b border-blue-800 bg-white">
+          <img src="https://hoangmaistarschool.edu.vn/thongtin/LogoNSHM.png" alt="Ngôi Sao Hoàng Mai" className="w-full object-contain max-h-[60px]" />
         </div>
         <div className="flex-1 py-6 flex flex-col gap-2 px-4">
           <div 
@@ -91,7 +117,7 @@ export default function AdminScreen() {
                   <div className="relative z-10">
                     <div className="text-gray-500 text-[15px] font-medium mb-1">Total Clicks</div>
                     <div className="text-[38px] lg:text-[42px] font-bold text-gray-900 leading-none mb-1">
-                      {adminSummaryCards.totalClicks}
+                      {loading ? '...' : totalClicks}
                     </div>
                     <div className="text-[13px] text-[#1554A1] font-medium tracking-wide">All Time +12%</div>
                   </div>
@@ -111,7 +137,7 @@ export default function AdminScreen() {
                       <div className="text-gray-500 text-sm font-medium">Active Courses</div>
                       <div className="p-2 bg-blue-50 rounded-lg"><BookOpen className="text-[#1554A1] w-5 h-5" /></div>
                     </div>
-                    <div className="text-[28px] md:text-3xl font-bold leading-none mb-1 text-gray-900">{adminSummaryCards.activeCourses}</div>
+                    <div className="text-[28px] md:text-3xl font-bold leading-none mb-1 text-gray-900">{loading ? '...' : activeCourses}</div>
                     <div className="text-[12px] text-green-600 font-medium">+2 this week</div>
                   </div>
 
@@ -120,8 +146,8 @@ export default function AdminScreen() {
                       <div className="text-gray-500 text-sm font-medium leading-tight pr-2">Top Course</div>
                       <div className="p-2 bg-amber-50 rounded-lg"><Trophy className="text-amber-500 w-5 h-5" /></div>
                     </div>
-                    <div className="text-[16px] md:text-lg font-bold mb-1 leading-tight tracking-tight text-gray-900 line-clamp-1">{adminSummaryCards.topCourse}</div>
-                    <div className="text-[12px] text-gray-500 font-medium">{adminSummaryCards.topCourseClicks} Clicks</div>
+                    <div className="text-[16px] md:text-lg font-bold mb-1 leading-tight tracking-tight text-gray-900 line-clamp-1">{loading ? '...' : topCourseTitle}</div>
+                    <div className="text-[12px] text-gray-500 font-medium">{loading ? '...' : topCourseClicks} Clicks</div>
                   </div>
                 </div>
               </div>

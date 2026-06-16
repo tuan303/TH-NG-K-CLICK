@@ -7,6 +7,8 @@ import { Course } from '../types';
 export default function UserScreen() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newCourses, setNewCourses] = useState<Course[]>([]);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'courses'), orderBy('stt', 'asc'));
@@ -17,6 +19,19 @@ export default function UserScreen() {
       })) as Course[];
       setCourses(coursesData);
       setLoading(false);
+
+      // Notification logic
+      const storedCourseIdsStr = localStorage.getItem('seenCourseIds');
+      let storedCourseIds: string[] = storedCourseIdsStr ? JSON.parse(storedCourseIdsStr) : [];
+      
+      if (storedCourseIds.length === 0 && coursesData.length > 0) {
+        // First load, save all as seen
+        storedCourseIds = coursesData.map(c => c.id);
+        localStorage.setItem('seenCourseIds', JSON.stringify(storedCourseIds));
+      } else {
+        const unseen = coursesData.filter(c => !storedCourseIds.includes(c.id));
+        setNewCourses(unseen);
+      }
     });
 
     return () => unsubscribe();
@@ -28,7 +43,7 @@ export default function UserScreen() {
       window.open(course.link, '_blank', 'noopener,noreferrer');
     }
     
-    // Increment clicks
+      // Increment clicks
     try {
       const courseRef = doc(db, 'courses', course.id);
       await updateDoc(courseRef, {
@@ -39,30 +54,53 @@ export default function UserScreen() {
     }
   };
 
+  const handleOpenNotification = () => {
+    setIsNotificationOpen(true);
+    if (newCourses.length > 0) {
+      const storedCourseIdsStr = localStorage.getItem('seenCourseIds');
+      const storedCourseIds: string[] = storedCourseIdsStr ? JSON.parse(storedCourseIdsStr) : [];
+      const newIds = newCourses.map(c => c.id);
+      localStorage.setItem('seenCourseIds', JSON.stringify([...storedCourseIds, ...newIds]));
+    }
+  };
+
+  const closeNotification = () => {
+    setIsNotificationOpen(false);
+    setNewCourses([]);
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-full w-full bg-[#F3F4F6]">
       {/* Desktop Sidebar (hidden on mobile) */}
       <div className="hidden md:flex flex-col w-64 bg-[#243b73] text-white shadow-xl z-20">
-        <div className="flex items-center gap-3 px-6 py-8 border-b border-blue-900">
-          <BookOpen className="w-8 h-8" />
-          <span className="font-bold text-2xl tracking-tight">EduTrack</span>
+        <div className="flex items-center px-6 py-6 border-b border-blue-900 bg-white">
+          <img src="https://hoangmaistarschool.edu.vn/thongtin/LogoNSHM.png" alt="Ngôi Sao Hoàng Mai" className="w-full object-contain max-h-[60px]" />
         </div>
         <div className="flex-1 py-6 flex flex-col gap-2 px-4">
           <div className="flex items-center gap-3 px-4 py-3 bg-white/10 rounded-xl cursor-pointer">
             <Book className="w-5 h-5" />
             <span className="font-medium text-[15px]">Khóa học</span>
           </div>
-          <div className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors text-blue-200 hover:text-white">
+          <div 
+            onClick={() => window.open('https://hoangmaistarschool.sharepoint.com/:f:/s/homer/IgC35Mlx_StrSaJHLqpsg-FqAVVi-_OdHZ2q9ckZ66WCW9k?e=jbKUmu', '_blank', 'noopener,noreferrer')}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors text-blue-200 hover:text-white"
+          >
             <Folder className="w-5 h-5" />
             <span className="font-medium text-[15px]">Tài nguyên</span>
           </div>
-          <div className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors text-blue-200 hover:text-white">
-            <Bell className="w-5 h-5" />
+          <div 
+            onClick={handleOpenNotification}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors text-blue-200 hover:text-white relative"
+          >
+            <div className="relative">
+              <Bell className="w-5 h-5" />
+              {newCourses.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none min-w-[16px] text-center">
+                  {newCourses.length}
+                </span>
+              )}
+            </div>
             <span className="font-medium text-[15px]">Thông báo</span>
-          </div>
-          <div className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors text-blue-200 hover:text-white">
-            <Settings className="w-5 h-5" />
-            <span className="font-medium text-[15px]">Cài đặt</span>
           </div>
         </div>
       </div>
@@ -75,9 +113,8 @@ export default function UserScreen() {
           <div className="flex justify-between items-center max-w-7xl mx-auto w-full">
             
             {/* Mobile Title (hidden on desktop) */}
-            <div className="flex items-center gap-2 md:hidden">
-              <BookOpen className="w-8 h-8" />
-              <span className="font-bold text-2xl tracking-tight">EduTrack</span>
+            <div className="flex items-center md:hidden bg-white px-2 py-1 rounded">
+              <img src="https://hoangmaistarschool.edu.vn/thongtin/LogoNSHM.png" alt="Ngôi Sao Hoàng Mai" className="h-8 object-contain" />
             </div>
 
             {/* Desktop Dashboard Title & Search */}
@@ -175,25 +212,85 @@ export default function UserScreen() {
 
         {/* Mobile Bottom Navigation (hidden on desktop) */}
         <div className="md:hidden bg-[#fafafa] border-t border-gray-200 flex justify-around items-center pt-3 pb-8 px-2 absolute bottom-0 w-full z-10">
-          <div className="flex flex-col items-center justify-center gap-1 cursor-pointer w-1/4">
+          <div className="flex flex-col items-center justify-center gap-1 cursor-pointer w-1/3">
             <Book className="w-[26px] h-[26px] text-[#243b73] fill-[#243b73]" />
             <span className="text-[11px] font-medium text-[#243b73] mt-[2px]">Khóa học</span>
           </div>
-          <div className="flex flex-col items-center justify-center gap-1 cursor-pointer w-1/4">
+          <div 
+            onClick={() => window.open('https://hoangmaistarschool.sharepoint.com/:f:/s/homer/IgC35Mlx_StrSaJHLqpsg-FqAVVi-_OdHZ2q9ckZ66WCW9k?e=jbKUmu', '_blank', 'noopener,noreferrer')}
+            className="flex flex-col items-center justify-center gap-1 cursor-pointer w-1/3"
+          >
             <Folder className="w-6 h-6 text-gray-400" />
             <span className="text-[11px] font-medium text-gray-500 mt-[2px]">Tài nguyên</span>
           </div>
-          <div className="flex flex-col items-center justify-center gap-1 cursor-pointer w-1/4">
-            <Bell className="w-6 h-6 text-gray-400" />
+          <div 
+             onClick={handleOpenNotification}
+             className="flex flex-col items-center justify-center gap-1 cursor-pointer w-1/3 relative"
+          >
+            <div className="relative">
+              <Bell className="w-6 h-6 text-gray-400" />
+              {newCourses.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none min-w-[14px] text-center">
+                  {newCourses.length}
+                </span>
+              )}
+            </div>
             <span className="text-[11px] font-medium text-gray-500 mt-[2px]">Thông báo</span>
-          </div>
-          <div className="flex flex-col items-center justify-center gap-1 cursor-pointer w-1/4">
-            <Settings className="w-6 h-6 text-gray-400" />
-            <span className="text-[11px] font-medium text-gray-500 mt-[2px]">Cài đặt</span>
           </div>
         </div>
         
       </div>
+
+      {/* Notification Modal */}
+      {isNotificationOpen && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+              <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                <Bell className="w-5 h-5 text-[#243b73]" /> Thông báo mới
+              </h3>
+              <button onClick={closeNotification} className="text-gray-400 hover:text-gray-600 p-1">
+                <Menu className="w-5 h-5 opacity-0 hidden" /> {/* spacer */}
+                <span className="text-xl leading-none">&times;</span>
+              </button>
+            </div>
+            
+            <div className="p-0 flex-1 overflow-y-auto">
+              {newCourses.length > 0 ? (
+                <div className="flex flex-col">
+                  {newCourses.map((course) => (
+                    <div key={course.id} className="px-6 py-4 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-100 p-2 rounded-full mt-1 shrink-0">
+                          <BookOpen className="w-4 h-4 text-[#243b73]" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-900 font-medium">Khóa học mới: <span className="font-bold text-[#1a2d5c]">{course.title}</span></p>
+                          {course.instructor && <p className="text-xs text-gray-500 mt-1">Giảng viên: {course.instructor}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-gray-500 flex flex-col items-center gap-3">
+                  <Bell className="w-10 h-10 text-gray-300" />
+                  <p>Không có thông báo khóa học mới nào.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-100 bg-gray-50">
+              <button 
+                onClick={closeNotification}
+                className="w-full py-2.5 bg-[#243b73] text-white font-medium rounded-lg hover:bg-[#1a2d5c] transition-colors"
+               >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
