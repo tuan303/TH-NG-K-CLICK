@@ -23,8 +23,8 @@ const auth = getAuth(app);
 // Configure Microsoft Provider
 const microsoftProvider = new OAuthProvider('microsoft.com');
 // Tùy chọn: Thêm tenant id để giới hạn duy nhất tổ chức của bạn
-// microsoftProvider.setCustomParameters({
-//   tenant: 'af9ef20a-3158-43a0-a1ab-ad72a03eb4c5'
-// });
+microsoftProvider.setCustomParameters({
+  tenant: 'af9ef20a-3158-43a0-a1ab-ad72a03eb4c5'
+});
 
 export { app, analytics, db, auth, microsoftProvider };
