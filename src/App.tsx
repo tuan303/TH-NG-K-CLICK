@@ -30,6 +30,8 @@ export default function App() {
       console.error("Lỗi đăng nhập MS:", error);
       if (error.code === 'auth/unauthorized-domain') {
         alert(`Lỗi: Tên miền chưa được cấp phép.\nVui lòng truy cập Firebase Console -> Authentication -> Settings -> Authorized domains.\nThêm tên miền sau vào danh sách: ${window.location.hostname}`);
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        alert("Bạn đã đóng cửa sổ đăng nhập trước khi hoàn tất.\nVui lòng thử đăng nhập lại. Nếu cửa sổ không hiện ra, hãy kiểm tra trình chặn cửa sổ bật lên (popup blocker) trên trình duyệt.");
       } else {
         alert(`Đăng nhập thất bại.\nMã lỗi: ${error.code}\nChi tiết: ${error.message}\n\nVui lòng kiểm tra lại cấu hình SSO (Entra ID Client ID/Secret, Redirect URI, hoặc Quyền truy cập).`);
       }
