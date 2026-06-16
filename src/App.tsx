@@ -31,7 +31,7 @@ export default function App() {
       if (error.code === 'auth/unauthorized-domain') {
         alert(`Lỗi: Tên miền chưa được cấp phép.\nVui lòng truy cập Firebase Console -> Authentication -> Settings -> Authorized domains.\nThêm tên miền sau vào danh sách: ${window.location.hostname}`);
       } else {
-        alert("Đăng nhập thất bại. Vui lòng kiểm tra lại cấu hình SSO.");
+        alert(`Đăng nhập thất bại.\nMã lỗi: ${error.code}\nChi tiết: ${error.message}\n\nVui lòng kiểm tra lại cấu hình SSO (Entra ID Client ID/Secret, Redirect URI, hoặc Quyền truy cập).`);
       }
     }
   };
