@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, OAuthProvider } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -20,4 +20,11 @@ const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-export { app, analytics, db, auth };
+// Configure Microsoft Provider
+const microsoftProvider = new OAuthProvider('microsoft.com');
+// Tùy chọn: Thêm tenant id để giới hạn duy nhất tổ chức của bạn
+// microsoftProvider.setCustomParameters({
+//   tenant: 'af9ef20a-3158-43a0-a1ab-ad72a03eb4c5'
+// });
+
+export { app, analytics, db, auth, microsoftProvider };
