@@ -1,6 +1,6 @@
 import { Course, AdminCourse } from './types';
 
-export const userCourses: Course[] = [
+export const userCourses: any[] = [
   { id: 1, title: 'Toán học lớp 10 - Đại số cơ bản' },
   { id: 2, title: 'Vật lý 11 - Cơ học & Nhiệt học' },
   { id: 3, title: 'Hóa học 12 - Hóa hữu cơ' },

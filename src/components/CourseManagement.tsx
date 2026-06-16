@@ -1,0 +1,319 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Edit, Trash2, Search, Plus, Upload, X } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { Course } from '../types';
+import * as XLSX from 'xlsx';
+
+export default function CourseManagement() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    stt: '',
+    title: '',
+    instructor: '',
+    link: ''
+  });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Lắng nghe sự thay đổi từ Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'courses'), orderBy('stt', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const coursesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Course[];
+      setCourses(coursesData);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleOpenModal = (course?: Course) => {
+    if (course) {
+      setEditingCourse(course);
+      setFormData({
+        stt: course.stt.toString(),
+        title: course.title,
+        instructor: course.instructor || '',
+        link: course.link
+      });
+    } else {
+      setEditingCourse(null);
+      setFormData({
+        stt: (courses.length + 1).toString(),
+        title: '',
+        instructor: '',
+        link: ''
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingCourse(null);
+  };
+
+  const handleSaveCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const courseData = {
+        stt: parseInt(formData.stt) || 0,
+        title: formData.title,
+        instructor: formData.instructor,
+        link: formData.link,
+        clicks: editingCourse ? editingCourse.clicks : 0
+      };
+
+      if (editingCourse) {
+        await updateDoc(doc(db, 'courses', editingCourse.id), courseData);
+      } else {
+        await addDoc(collection(db, 'courses'), courseData);
+      }
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error saving course: ", error);
+      alert("Có lỗi xảy ra khi lưu khóa học!");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa khóa học này?')) {
+      try {
+        await deleteDoc(doc(db, 'courses', id));
+      } catch (error) {
+        console.error("Error deleting course: ", error);
+        alert("Có lỗi xảy ra khi xóa khóa học!");
+      }
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        
+        try {
+            // Hiển thị loading state nếu cần
+            for (const row of data as any[]) {
+                // Mapping columns base on their names or positions
+                // Giả định file excel có các cột: STT, "Tên khóa học", "Giảng viên/Người chia sẻ", "Link khóa học"
+                const keys = Object.keys(row);
+                
+                const stt = row[keys.find(k => k.toLowerCase().includes('stt')) || ''] || 0;
+                const title = row[keys.find(k => k.toLowerCase().includes('tên')) || ''] || '';
+                const instructor = row[keys.find(k => k.toLowerCase().includes('giảng viên') || k.toLowerCase().includes('chia sẻ')) || ''] || '';
+                const link = row[keys.find(k => k.toLowerCase().includes('link')) || ''] || '';
+
+                if (title) {
+                     await addDoc(collection(db, 'courses'), {
+                        stt: parseInt(stt) || 0,
+                        title: title,
+                        instructor: instructor,
+                        link: link,
+                        clicks: 0
+                    });
+                }
+            }
+            alert("Import Excel thành công!");
+        } catch (error) {
+            console.error("Error importing excel:", error);
+            alert("Có lỗi xảy ra khi import!");
+        }
+        if(fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const filteredCourses = courses.filter(course => 
+    course.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (course.instructor && course.instructor.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  return (
+    <div className="flex flex-col h-full w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h3 className="text-xl md:text-xl font-bold text-gray-900 tracking-tight">Quản lý Khóa học</h3>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Tìm kiếm..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#1554A1] outline-none text-sm shadow-sm"
+            />
+          </div>
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm"
+          >
+            <Upload className="w-4 h-4" />
+            <span className="hidden sm:inline">Import Excel</span>
+          </button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            accept=".xlsx, .xls"
+            className="hidden"
+          />
+          <button 
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 bg-[#1554A1] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors shadow-sm whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Thêm mới</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 flex-1 flex flex-col">
+        {/* Table Header */}
+        <div className="hidden md:grid grid-cols-12 bg-gray-50 text-gray-500 px-6 py-4 font-semibold text-sm border-b border-gray-200 uppercase tracking-wider sticky top-0 shrink-0 z-10">
+          <div className="col-span-1 text-center">STT</div>
+          <div className="col-span-4">Tên Khóa Học</div>
+          <div className="col-span-3">Giảng viên / Người chia sẻ</div>
+          <div className="col-span-2 text-center">Tổng Click</div>
+          <div className="col-span-2 text-right">Hành động</div>
+        </div>
+        <div className="md:hidden grid grid-cols-12 bg-[#f4f6f9] text-[#1c2e4a] px-4 py-3 font-semibold text-[14px]">
+          <div className="col-span-1 text-center">#</div>
+          <div className="col-span-5">Khóa Học</div>
+          <div className="col-span-3 text-center">Click</div>
+          <div className="col-span-3 text-right"></div>
+        </div>
+        
+        {/* Table Rows (Scrollable) */}
+        <div className="flex flex-col flex-1 overflow-y-auto">
+          {loading ? (
+             <div className="p-8 text-center text-gray-500">Đang tải dữ liệu...</div>
+          ) : filteredCourses.length === 0 ? (
+             <div className="p-8 text-center text-gray-500">Không tìm thấy khóa học nào.</div>
+          ) : (
+            filteredCourses.map((course) => (
+              <div key={course.id} className="grid grid-cols-12 px-4 md:px-6 py-[14px] md:py-4 items-center text-[15px] border-b border-gray-100 last:border-b-0 bg-white hover:bg-gray-50 transition-colors group">
+                <div className="col-span-1 text-center font-medium md:text-sm text-gray-500">{course.stt}</div>
+                <div className="col-span-5 md:col-span-4 font-medium text-gray-900 leading-tight pr-2 md:text-sm">
+                  {course.title}
+                  {/* Show link on mobile as subtitle */}
+                   <div className="md:hidden text-xs text-blue-500 font-normal truncate mt-1">
+                      <a href={course.link} target="_blank" rel="noopener noreferrer">{course.link}</a>
+                   </div>
+                </div>
+                <div className="col-span-3 font-normal text-gray-600 md:text-sm truncate hidden md:block" title={course.instructor}>
+                  {course.instructor || '-'}
+                </div>
+                <div className="col-span-3 md:col-span-2 text-center font-medium md:font-semibold text-gray-700 md:text-gray-900 md:text-sm">
+                  {course.clicks}
+                </div>
+                <div className="col-span-3 md:col-span-2 flex justify-end gap-[10px]">
+                  <button onClick={() => handleOpenModal(course)} className="text-gray-400 hover:text-[#1554A1] hover:bg-blue-50 p-1.5 rounded transition-colors hidden md:block">
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDelete(course.id)} className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Modal Cập nhật */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 sticky top-0 z-10 shrink-0">
+              <h3 className="font-bold text-lg text-gray-900">
+                {editingCourse ? 'Cập nhật Khóa học' : 'Thêm Khóa học mới'}
+              </h3>
+              <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSaveCourse} className="p-6 flex flex-col gap-4 overflow-y-auto w-full">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">STT</label>
+                <input 
+                  type="number" 
+                  required
+                  value={formData.stt}
+                  onChange={(e) => setFormData({...formData, stt: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#1554A1] focus:bg-white outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tên Khóa Học *</label>
+                <input 
+                  type="text" 
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#1554A1] focus:bg-white outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Giảng viên / Người chia sẻ</label>
+                <input 
+                  type="text" 
+                  value={formData.instructor}
+                  onChange={(e) => setFormData({...formData, instructor: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#1554A1] focus:bg-white outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Link Khóa Học *</label>
+                <input 
+                  type="url" 
+                  required
+                  value={formData.link}
+                  onChange={(e) => setFormData({...formData, link: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#1554A1] focus:bg-white outline-none transition-colors"
+                  placeholder="https://"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
+                <button 
+                  type="button" 
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit"
+                  className="px-5 py-2 font-medium text-white bg-[#1554A1] hover:bg-blue-800 rounded-lg transition-colors shadow-sm"
+                >
+                  {editingCourse ? 'Cập nhật' : 'Thêm mới'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

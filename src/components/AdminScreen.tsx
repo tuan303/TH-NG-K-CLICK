@@ -1,126 +1,172 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Menu, UserCircle, BarChart2, BookOpen, Trophy, 
   LayoutDashboard, BookText, Users, Settings, Edit, Trash2, 
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
+  Search, Bell
 } from 'lucide-react';
 import { adminSummaryCards, adminCourses } from '../data';
+import CourseManagement from './CourseManagement';
 
 export default function AdminScreen() {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'courses'>('courses');
+
   return (
-    <div className="flex flex-col h-full w-full bg-[#f0f4f9] relative font-sans">
-      {/* Header */}
-      <div className="bg-[#1554A1] text-white px-5 pt-12 pb-4 flex items-center justify-between shadow-md">
-        <Menu className="w-7 h-7 cursor-pointer opacity-90" />
-        <div className="font-semibold text-xl tracking-tight">Admin Dashboard</div>
-        <UserCircle className="w-8 h-8 cursor-pointer opacity-90" />
+    <div className="flex flex-col md:flex-row h-full w-full bg-[#f0f4f9] font-sans">
+      
+      {/* Desktop Sidebar (hidden on mobile) */}
+      <div className="hidden md:flex flex-col w-64 bg-[#1554A1] text-white shadow-xl z-20 shrink-0">
+        <div className="flex items-center gap-3 px-6 py-8 border-b border-blue-800">
+          <BookOpen className="w-8 h-8" />
+          <span className="font-bold text-2xl tracking-tight">AdminPanel</span>
+        </div>
+        <div className="flex-1 py-6 flex flex-col gap-2 px-4">
+          <div 
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors ${activeTab === 'dashboard' ? 'bg-white/10 shadow-inner' : 'text-blue-200 hover:bg-white/5 hover:text-white'}`}
+          >
+            <LayoutDashboard className="w-5 h-5" />
+            <span className="font-medium text-[15px]">Dashboard</span>
+          </div>
+          <div 
+            onClick={() => setActiveTab('courses')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors ${activeTab === 'courses' ? 'bg-white/10 shadow-inner' : 'text-blue-200 hover:bg-white/5 hover:text-white'}`}
+          >
+            <BookText className="w-5 h-5" />
+            <span className="font-medium text-[15px]">Courses</span>
+          </div>
+          <div className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors text-blue-200 hover:text-white">
+            <BarChart2 className="w-5 h-5" />
+            <span className="font-medium text-[15px]">Analytics</span>
+          </div>
+          <div className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors text-blue-200 hover:text-white">
+            <Users className="w-5 h-5" />
+            <span className="font-medium text-[15px]">Users</span>
+          </div>
+          <div className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors text-blue-200 hover:text-white">
+            <Settings className="w-5 h-5" />
+            <span className="font-medium text-[15px]">Settings</span>
+          </div>
+        </div>
       </div>
 
-      {/* Main Content scrollable area */}
-      <div className="flex-1 overflow-y-auto p-4 pb-28">
+      {/* Main Content Area */}
+      <div className="flex flex-col flex-1 h-full relative overflow-hidden">
         
-        {/* Full width card */}
-        <div className="bg-white p-5 rounded-2xl shadow-sm mb-4 border border-gray-100 flex flex-col justify-between">
-          <div>
-            <div className="text-gray-800 text-[15px] font-medium mb-1">Total Clicks</div>
-            <div className="text-[38px] font-bold text-gray-900 leading-none mb-1">
-              {adminSummaryCards.totalClicks}
+        {/* Header */}
+        <div className="bg-[#1554A1] md:bg-white md:text-gray-800 text-white px-5 md:px-8 py-4 pt-12 md:pt-4 flex items-center justify-between md:border-b border-gray-200 shadow-md md:shadow-none shrink-0 z-10">
+          {/* Mobile Menu Icon */}
+          <Menu className="w-7 h-7 cursor-pointer opacity-90 md:hidden" />
+          
+          {/* Dashboard Title Mobile */}
+          <div className="font-semibold text-xl tracking-tight md:hidden">Admin Dashboard</div>
+          
+          {/* Dashboard Title & Search Desktop */}
+          <div className="hidden md:flex items-center flex-1 gap-6">
+            <h1 className="font-bold text-2xl tracking-tight text-gray-900">
+                {activeTab === 'dashboard' ? 'Dashboard Overview' : 'Course Management'}
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Bell className="w-6 h-6 text-gray-500 cursor-pointer hidden md:block hover:text-gray-700 transition" />
+            <div className="flex items-center gap-2 cursor-pointer">
+              <div className="hidden md:block text-right mr-1">
+                <div className="font-semibold text-sm leading-none">Admin User</div>
+                <div className="text-xs text-gray-500 font-medium">Administrator</div>
+              </div>
+              <UserCircle className="w-8 h-8 opacity-90 md:opacity-100 md:text-gray-400" />
             </div>
-            <div className="text-[13px] text-gray-400 font-medium tracking-wide">All Time</div>
-          </div>
-          {/* Decorative graphic right side (absolute positioned visually) */}
-          <div className="absolute right-8 top-[100px] flex items-end gap-1">
-             <div className="w-3 mx-0.5 bg-[#1554A1] h-6 rounded-t-sm opacity-60"></div>
-             <div className="w-3 mx-0.5 bg-[#1554A1] h-10 rounded-t-sm opacity-80"></div>
-             <div className="w-3 mx-0.5 bg-[#1554A1] h-12 rounded-t-sm"></div>
           </div>
         </div>
 
-        {/* Half width cards row */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-white p-4 pb-5 rounded-2xl shadow-sm border border-gray-100 relative">
-            <div className="text-gray-800 text-sm font-medium mb-2">Active Courses</div>
-            <div className="text-[28px] font-bold leading-none mb-1">{adminSummaryCards.activeCourses}</div>
-            <div className="text-[12px] text-gray-400 font-medium">Currently Live</div>
-            <BookOpen className="absolute right-4 top-10 text-[#1554A1] w-8 h-8 opacity-90" />
-          </div>
-          <div className="bg-white p-4 pb-5 rounded-2xl shadow-sm border border-gray-100 relative">
-            <div className="text-gray-800 text-sm font-medium leading-tight mb-2 pr-4">Top Performing Course</div>
-            <div className="text-[17px] font-bold mb-1 leading-tight tracking-tight text-gray-900">{adminSummaryCards.topCourse}</div>
-            <div className="text-[12px] text-gray-400 font-medium mt-1">{adminSummaryCards.topCourseClicks} Clicks</div>
-            <Trophy className="absolute right-4 bottom-5 text-[#1554A1] w-7 h-7 opacity-90" />
-          </div>
-        </div>
-
-        {/* Section Title */}
-        <h3 className="text-[1.4rem] font-bold text-gray-900 mb-3 tracking-tight">Course Management</h3>
-
-        {/* Table Card */}
-        <div className="bg-white rounded-[1.25rem] shadow-sm overflow-hidden border border-gray-100">
-          <div className="px-4 py-4 border-b border-gray-100 bg-white">
-            <h4 className="font-bold text-gray-900 text-lg">Course Management</h4>
-          </div>
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto w-full max-w-7xl mx-auto px-4 py-5 md:px-8 md:py-8 pb-28 md:pb-8 flex flex-col">
           
-          {/* Table Header */}
-          <div className="grid grid-cols-12 bg-[#f4f6f9] text-[#1c2e4a] px-4 py-3 font-semibold text-[14px]">
-            <div className="col-span-5">Tên Khóa Học</div>
-            <div className="col-span-4 text-center">Tổng số Click</div>
-            <div className="col-span-3 text-right">Hành động</div>
-          </div>
-          
-          {/* Table Rows */}
-          <div className="flex flex-col">
-            {adminCourses.map((course) => (
-              <div key={course.id} className="grid grid-cols-12 px-4 py-[14px] items-center text-[15px] border-b border-gray-100 last:border-b-0 bg-white">
-                <div className="col-span-5 font-medium text-gray-800 leading-tight pr-2">{course.title}</div>
-                <div className="col-span-4 text-center font-medium text-gray-800">{course.clicks}</div>
-                <div className="col-span-3 flex justify-end gap-[10px]">
-                  <button className="text-[#1554A1] hover:bg-blue-50 p-1.5 rounded transition-colors border border-blue-100">
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button className="text-[#e13434] hover:bg-red-50 p-1.5 rounded transition-colors border border-red-100">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+          {activeTab === 'dashboard' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                {/* Full width card (stretches on mobile, col-span-1 on desktop) */}
+                <div className="bg-white p-5 md:p-6 rounded-2xl md:rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden md:col-span-1">
+                  <div className="relative z-10">
+                    <div className="text-gray-500 text-[15px] font-medium mb-1">Total Clicks</div>
+                    <div className="text-[38px] lg:text-[42px] font-bold text-gray-900 leading-none mb-1">
+                      {adminSummaryCards.totalClicks}
+                    </div>
+                    <div className="text-[13px] text-[#1554A1] font-medium tracking-wide">All Time +12%</div>
+                  </div>
+                  {/* Decorative graphic */}
+                  <div className="absolute right-6 -bottom-4 flex items-end gap-1.5 opacity-20 md:opacity-10">
+                    <div className="w-4 bg-[#1554A1] h-12 rounded-t-md"></div>
+                    <div className="w-4 bg-[#1554A1] h-16 rounded-t-md"></div>
+                    <div className="w-4 bg-[#1554A1] h-20 rounded-t-md"></div>
+                    <div className="w-4 bg-[#1554A1] h-24 rounded-t-md"></div>
+                  </div>
+                </div>
+
+                {/* Other Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-2 col-span-1 md:col-span-2 gap-4">
+                  <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-center">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="text-gray-500 text-sm font-medium">Active Courses</div>
+                      <div className="p-2 bg-blue-50 rounded-lg"><BookOpen className="text-[#1554A1] w-5 h-5" /></div>
+                    </div>
+                    <div className="text-[28px] md:text-3xl font-bold leading-none mb-1 text-gray-900">{adminSummaryCards.activeCourses}</div>
+                    <div className="text-[12px] text-green-600 font-medium">+2 this week</div>
+                  </div>
+
+                  <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-center">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="text-gray-500 text-sm font-medium leading-tight pr-2">Top Course</div>
+                      <div className="p-2 bg-amber-50 rounded-lg"><Trophy className="text-amber-500 w-5 h-5" /></div>
+                    </div>
+                    <div className="text-[16px] md:text-lg font-bold mb-1 leading-tight tracking-tight text-gray-900 line-clamp-1">{adminSummaryCards.topCourse}</div>
+                    <div className="text-[12px] text-gray-500 font-medium">{adminSummaryCards.topCourseClicks} Clicks</div>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="text-center text-gray-500 italic mt-10">Select "Courses" tab to manage courses.</div>
+            </>
+          )}
 
-          {/* Pagination */}
-          <div className="flex justify-end items-center gap-1.5 px-4 py-3 bg-[#f8f9fb] border-t border-gray-100 text-gray-400">
-             <button className="p-1 hover:text-gray-600 transition-colors"><ChevronsLeft className="w-4 h-4" /></button>
-             <button className="p-1 hover:text-gray-600 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-             <button className="w-7 h-7 bg-[#1554A1] text-white rounded-[4px] text-[13px] font-semibold flex items-center justify-center mx-1">1</button>
-             <button className="p-1 hover:text-gray-600 transition-colors"><ChevronRight className="w-4 h-4" /></button>
-             <button className="p-1 hover:text-gray-600 transition-colors"><ChevronsRight className="w-4 h-4" /></button>
+          {activeTab === 'courses' && (
+            <CourseManagement />
+          )}
+
+        </div>
+
+        {/* Mobile Bottom Navigation (hidden on desktop) */}
+        <div className="md:hidden bg-white flex justify-around items-center pt-3 pb-8 px-1 absolute bottom-0 w-full z-10 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] border-t border-gray-100">
+          <div 
+            onClick={() => setActiveTab('dashboard')}
+            className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5 relative group"
+          >
+            {activeTab === 'dashboard' && <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-10 h-[3px] bg-[#1554A1] rounded-b-md"></div>}
+            <LayoutDashboard className={`w-[22px] h-[22px] ${activeTab === 'dashboard' ? 'text-[#1554A1] fill-[#1554A1]/20' : 'text-gray-400'}`} />
+            <span className={`text-[10px] ${activeTab === 'dashboard' ? 'font-semibold text-[#1554A1]' : 'font-medium text-gray-400'}`}>Dashboard</span>
+          </div>
+          <div 
+            onClick={() => setActiveTab('courses')}
+            className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5 relative"
+          >
+            {activeTab === 'courses' && <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-10 h-[3px] bg-[#1554A1] rounded-b-md"></div>}
+            <BookText className={`w-[22px] h-[22px] ${activeTab === 'courses' ? 'text-[#1554A1] fill-[#1554A1]/20' : 'text-gray-400'}`} />
+            <span className={`text-[10px] ${activeTab === 'courses' ? 'font-semibold text-[#1554A1]' : 'font-medium text-gray-400'}`}>Courses</span>
+          </div>
+          <div className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5">
+            <BarChart2 className="w-[22px] h-[22px] text-gray-400" />
+            <span className="text-[10px] font-medium text-gray-400">Analytics</span>
+          </div>
+          <div className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5">
+            <Users className="w-[22px] h-[22px] text-gray-400" />
+            <span className="text-[10px] font-medium text-gray-400">Users</span>
+          </div>
+          <div className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5">
+            <Settings className="w-[22px] h-[22px] text-gray-400" />
+            <span className="text-[10px] font-medium text-gray-400">Settings</span>
           </div>
         </div>
-      </div>
 
-      {/* Bottom Navigation */}
-      <div className="bg-white flex justify-around items-center pt-3 pb-8 px-1 absolute bottom-0 w-full z-10 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] border-t border-gray-100">
-        <div className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5 relative group">
-          {/* Active indicator bar */}
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-10 h-[3px] bg-[#1554A1] rounded-b-md"></div>
-          <LayoutDashboard className="w-[22px] h-[22px] text-[#1554A1] fill-[#1554A1]/20" />
-          <span className="text-[10px] font-semibold text-[#1554A1]">Dashboard</span>
-        </div>
-        <div className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5">
-          <BookText className="w-[22px] h-[22px] text-gray-400" />
-          <span className="text-[10px] font-medium text-gray-400">Courses</span>
-        </div>
-        <div className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5">
-          <BarChart2 className="w-[22px] h-[22px] text-gray-400" />
-          <span className="text-[10px] font-medium text-gray-400">Analytics</span>
-        </div>
-        <div className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5">
-          <Users className="w-[22px] h-[22px] text-gray-400" />
-          <span className="text-[10px] font-medium text-gray-400">Users</span>
-        </div>
-        <div className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5">
-          <Settings className="w-[22px] h-[22px] text-gray-400" />
-          <span className="text-[10px] font-medium text-gray-400">Settings</span>
-        </div>
       </div>
     </div>
   );
