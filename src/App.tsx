@@ -36,10 +36,9 @@ export default function App() {
       if (error.code === 'auth/unauthorized-domain') {
         alert(`Lỗi: Tên miền chưa được cấp phép.\nVui lòng truy cập Firebase Console -> Authentication -> Settings -> Authorized domains.\nThêm tên miền sau vào danh sách: ${window.location.hostname}`);
       } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/popup-blocked') {
-        // Fallback to redirect if popup is blocked or closed abruptly
-        signInWithRedirect(auth, microsoftProvider).catch((e) => {
-           alert("Lỗi chuyển hướng: " + e.message);
-        });
+        alert("Cửa sổ đăng nhập đã bị ẩn hoặc đóng.\nVui lòng thử lại. Nếu dùng điện thoại hoặc trình duyệt chặn popup, hãy sử dụng chuyển hướng đăng nhập bên dưới.");
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        console.warn("Popup request cancelled (tránh spam click).");
       } else {
         alert(`Đăng nhập thất bại.\nMã lỗi: ${error.code}\nChi tiết: ${error.message}\n\nVui lòng kiểm tra lại cấu hình SSO (Entra ID Client ID/Secret, Redirect URI, hoặc Quyền truy cập).`);
       }
@@ -63,10 +62,17 @@ export default function App() {
           </p>
           <button
             onClick={handleLogin}
-            className="w-full flex justify-center items-center gap-3 bg-[#2F2F2F] hover:bg-[#1A1A1A] transition-colors text-white py-3 px-4 rounded-xl font-semibold shadow-sm"
+            className="w-full flex justify-center items-center gap-3 bg-[#2F2F2F] hover:bg-[#1A1A1A] transition-colors text-white py-3 px-4 rounded-xl font-semibold shadow-sm mb-4"
           >
             <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" className="w-5 h-5 bg-white p-0.5" />
             Đăng nhập với Microsoft 365
+          </button>
+          
+          <button 
+             onClick={() => signInWithRedirect(auth, microsoftProvider)}
+             className="w-full flex justify-center items-center gap-2 bg-gray-50 hover:bg-gray-100 transition-colors text-gray-700 py-3 px-4 rounded-xl font-medium border shadow-sm text-sm"
+          >
+            Dùng tùy chọn Chuyển Hướng nếu bị chặn popup
           </button>
         </div>
       </div>
