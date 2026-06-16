@@ -1,0 +1,6 @@
+{
+  "name": "EduTrack App",
+  "description": "A demo mobile app interface with User and Admin screens for course management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
