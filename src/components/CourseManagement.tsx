@@ -160,8 +160,8 @@ export default function CourseManagement() {
     const ws = XLSX.utils.json_to_sheet(
       clickHistory.map((rec, index) => ({
         "STT": index + 1,
+        "Họ tên": rec.displayName,
         "Email": rec.email,
-        "Tên hiển thị": rec.displayName,
         "Thời gian click": new Date(rec.clickedAt).toLocaleString('vi-VN')
       }))
     );
@@ -474,8 +474,8 @@ export default function CourseManagement() {
                       <thead className="bg-gray-100/70 border-b border-gray-200 sticky top-0">
                         <tr>
                           <th className="px-4 py-3 font-semibold text-gray-600 w-16 text-center">STT</th>
+                          <th className="px-4 py-3 font-semibold text-gray-600">Họ tên</th>
                           <th className="px-4 py-3 font-semibold text-gray-600 min-w-[200px]">Email</th>
-                          <th className="px-4 py-3 font-semibold text-gray-600">Tên hiển thị</th>
                           <th className="px-4 py-3 font-semibold text-gray-600 text-right">Thời gian</th>
                         </tr>
                       </thead>
@@ -483,8 +483,8 @@ export default function CourseManagement() {
                          {clickHistory.map((rec, index) => (
                            <tr key={index} className="bg-white border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
                               <td className="px-4 py-3 text-center text-gray-500 font-medium">{index + 1}</td>
-                              <td className="px-4 py-3 font-medium text-gray-900">{rec.email}</td>
-                              <td className="px-4 py-3 text-gray-600">{rec.displayName}</td>
+                              <td className="px-4 py-3 text-gray-900 font-medium">{rec.displayName}</td>
+                              <td className="px-4 py-3 text-gray-500">{rec.email}</td>
                               <td className="px-4 py-3 text-gray-500 text-right">{new Date(rec.clickedAt).toLocaleString('vi-VN')}</td>
                            </tr>
                          ))}

@@ -61,7 +61,7 @@ export default function AdminScreen({ user }: AdminScreenProps) {
       const sortedUsers = Object.entries(userClicks)
         .map(([email, data]) => ({ email, displayName: data.displayName, count: data.count }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 5); // top 5 users
+        .slice(0, 10); // top 10 users
         
       setTopUsers(sortedUsers);
     };
@@ -173,7 +173,7 @@ export default function AdminScreen({ user }: AdminScreenProps) {
                     <div className="text-[38px] lg:text-[42px] font-bold text-gray-900 leading-none mb-1">
                       {loading ? '...' : totalClicks}
                     </div>
-                    <div className="text-[13px] text-[#1554A1] font-medium tracking-wide">All Time +12%</div>
+                    <div className="text-[13px] text-[#1554A1] font-medium tracking-wide">All Time</div>
                   </div>
                   {/* Decorative graphic */}
                   <div className="absolute right-6 -bottom-4 flex items-end gap-1.5 opacity-20 md:opacity-10">
@@ -192,7 +192,6 @@ export default function AdminScreen({ user }: AdminScreenProps) {
                       <div className="p-2 bg-blue-50 rounded-lg"><BookOpen className="text-[#1554A1] w-5 h-5" /></div>
                     </div>
                     <div className="text-[28px] md:text-3xl font-bold leading-none mb-1 text-gray-900">{loading ? '...' : activeCourses}</div>
-                    <div className="text-[12px] text-green-600 font-medium">+2 this week</div>
                   </div>
 
                   <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-center">
@@ -218,7 +217,67 @@ export default function AdminScreen({ user }: AdminScreenProps) {
                   </div>
                 </div>
               </div>
-              <div className="text-center text-gray-500 italic mt-10">Select "Courses" tab to manage courses.</div>
+
+              {/* Top 10 Statistics */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                {/* Top 10 Courses */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                  <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-amber-500" /> Top 10 Khóa học nổi bật
+                    </h3>
+                  </div>
+                  <div className="flex-1">
+                    {courses.length > 0 ? (
+                      <table className="w-full text-sm">
+                        <tbody>
+                          {[...courses].sort((a,b) => (b.clicks || 0) - (a.clicks || 0)).slice(0, 10).map((course, index) => (
+                            <tr key={course.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
+                              <td className="py-3 px-5 text-gray-400 font-medium w-12 text-center">{index + 1}</td>
+                              <td className="py-3 px-2 font-medium text-gray-900">
+                                <div className="line-clamp-1">{course.title}</div>
+                              </td>
+                              <td className="py-3 px-5 text-right font-semibold text-[#1554A1] whitespace-nowrap">{course.clicks || 0} clicks</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="p-8 text-center text-gray-500">Chưa có dữ liệu</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Top 10 Users */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                  <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-purple-500" /> Top 10 Học viên xem nhiều
+                    </h3>
+                  </div>
+                  <div className="flex-1">
+                    {topUsers.length > 0 ? (
+                      <table className="w-full text-sm">
+                        <tbody>
+                          {topUsers.map((user, index) => (
+                            <tr key={index} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
+                              <td className="py-3 px-5 text-gray-400 font-medium w-12 text-center">{index + 1}</td>
+                              <td className="py-3 px-2">
+                                <div className="font-medium text-gray-900">{user.displayName}</div>
+                                <div className="text-[11px] text-gray-500">{user.email}</div>
+                              </td>
+                              <td className="py-3 px-5 text-right font-semibold text-[#1554A1] whitespace-nowrap">{user.count} lượt</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="p-8 text-center text-gray-500">Chưa có dữ liệu</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="h-10"></div>
             </>
           )}
 
