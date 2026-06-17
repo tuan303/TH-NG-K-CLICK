@@ -24,7 +24,9 @@ const auth = getAuth(app);
 const microsoftProvider = new OAuthProvider('microsoft.com');
 // Tùy chọn: Thêm tenant id để giới hạn duy nhất tổ chức của bạn
 microsoftProvider.setCustomParameters({
-  tenant: 'af9ef20a-3158-43a0-a1ab-ad72a03eb4c5'
+  tenant: 'af9ef20a-3158-43a0-a1ab-ad72a03eb4c5',
+  prompt: 'select_account',
+  domain_hint: 'hoangmaistarschool.edu.vn'
 });
 
 export { app, analytics, db, auth, microsoftProvider };

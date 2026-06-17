@@ -26,7 +26,14 @@ export default function App() {
   const handleLoginPopup = async () => {
     try {
       setLoading(true);
-      await signInWithPopup(auth, microsoftProvider);
+      const result = await signInWithPopup(auth, microsoftProvider);
+      
+      // Basic client-side domain verification
+      if (result.user.email && !result.user.email.endsWith('@hoangmaistarschool.edu.vn')) {
+         await signOut(auth);
+         alert('Vui lòng sử dụng email @hoangmaistarschool.edu.vn để truy cập.');
+         return; // User state will be cleaned up by onAuthStateChanged
+      }
     } catch (error: any) {
       console.error("Lỗi đăng nhập MS:", error);
       if (error.code === 'auth/popup-closed-by-user') {
