@@ -1,9 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Edit, Trash2, Search, Plus, Upload, X, Download, FileSpreadsheet } from 'lucide-react';
+import { Edit, Trash2, Search, Plus, Upload, X, Download, FileSpreadsheet, List, FileDown } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { Course } from '../types';
 import * as XLSX from 'xlsx';
+
+interface ClickRecord {
+  id: string;
+  email: string;
+  displayName: string;
+  clickedAt: string;
+}
 
 export default function CourseManagement() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -14,6 +21,12 @@ export default function CourseManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  
+  // Click History Modal state
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedCourseForHistory, setSelectedCourseForHistory] = useState<Course | null>(null);
+  const [clickHistory, setClickHistory] = useState<ClickRecord[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -118,6 +131,43 @@ export default function CourseManagement() {
         alert("Có lỗi xảy ra khi xóa khóa học!");
       }
     }
+  };
+
+  const handleOpenHistory = async (course: Course) => {
+    setSelectedCourseForHistory(course);
+    setIsHistoryModalOpen(true);
+    setLoadingHistory(true);
+    try {
+      const historySnapshot = await getDocs(
+        query(collection(db, 'courses', course.id, 'clickHistory'), orderBy('clickedAt', 'desc'))
+      );
+      const historyData = historySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ClickRecord[];
+      setClickHistory(historyData);
+    } catch (error) {
+      console.error("Error fetching click history: ", error);
+      alert("Không thể tải danh sách click.");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleExportHistory = () => {
+    if (clickHistory.length === 0) return;
+    
+    const ws = XLSX.utils.json_to_sheet(
+      clickHistory.map((rec, index) => ({
+        "STT": index + 1,
+        "Email": rec.email,
+        "Tên hiển thị": rec.displayName,
+        "Thời gian click": new Date(rec.clickedAt).toLocaleString('vi-VN')
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Lich_Su_Click");
+    XLSX.writeFile(wb, `ClickHistory_${selectedCourseForHistory?.title.replace(/\s+/g, '_')}.xlsx`);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,8 +295,8 @@ export default function CourseManagement() {
                 <div className="col-span-3 font-normal text-gray-600 md:text-sm truncate hidden md:block" title={course.instructor}>
                   {course.instructor || '-'}
                 </div>
-                <div className="col-span-3 md:col-span-2 text-center font-medium md:font-semibold text-gray-700 md:text-gray-900 md:text-sm">
-                  {course.clicks}
+                <div className="col-span-3 md:col-span-2 text-center font-medium md:font-semibold text-[#1554A1] md:text-sm cursor-pointer hover:underline" onClick={() => handleOpenHistory(course)} title="Xem lịch sử click">
+                  {course.clicks || 0}
                 </div>
                 <div className="col-span-3 md:col-span-2 flex justify-end gap-[10px]">
                   <button onClick={() => handleOpenModal(course)} className="text-gray-400 hover:text-[#1554A1] hover:bg-blue-50 p-1.5 rounded transition-colors hidden md:block">
@@ -378,6 +428,71 @@ export default function CourseManagement() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Lịch sử Click */}
+      {isHistoryModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+              <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
+                <List className="w-5 h-5 text-[#1554A1]" /> Lịch sử Click
+              </h3>
+              <button 
+                onClick={() => setIsHistoryModalOpen(false)} 
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 flex flex-col h-full overflow-hidden">
+              <div className="mb-4 flex flex-col sm:flex-row justify-between sm:items-end gap-3">
+                <div>
+                  <p className="text-sm text-gray-500">Khóa học</p>
+                  <p className="font-semibold text-gray-900 border-b border-gray-100 pb-2">{selectedCourseForHistory?.title}</p>
+                </div>
+                {clickHistory.length > 0 && (
+                  <button 
+                    onClick={handleExportHistory}
+                    className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-sm shrink-0"
+                  >
+                    <FileDown className="w-4 h-4" />
+                    <span>Xuất Excel</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-auto border border-gray-100 rounded-lg bg-gray-50">
+                 {loadingHistory ? (
+                   <div className="p-8 text-center text-gray-500">Đang tải danh sách...</div>
+                 ) : clickHistory.length === 0 ? (
+                   <div className="p-8 text-center text-gray-500">Chưa có ai click vào khóa học này. (Chỉ tính những click từ lúc cập nhật mới)</div>
+                 ) : (
+                   <table className="w-full text-left border-collapse text-sm">
+                      <thead className="bg-gray-100/70 border-b border-gray-200 sticky top-0">
+                        <tr>
+                          <th className="px-4 py-3 font-semibold text-gray-600 w-16 text-center">STT</th>
+                          <th className="px-4 py-3 font-semibold text-gray-600 min-w-[200px]">Email</th>
+                          <th className="px-4 py-3 font-semibold text-gray-600">Tên hiển thị</th>
+                          <th className="px-4 py-3 font-semibold text-gray-600 text-right">Thời gian</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                         {clickHistory.map((rec, index) => (
+                           <tr key={index} className="bg-white border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-3 text-center text-gray-500 font-medium">{index + 1}</td>
+                              <td className="px-4 py-3 font-medium text-gray-900">{rec.email}</td>
+                              <td className="px-4 py-3 text-gray-600">{rec.displayName}</td>
+                              <td className="px-4 py-3 text-gray-500 text-right">{new Date(rec.clickedAt).toLocaleString('vi-VN')}</td>
+                           </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                 )}
+              </div>
+            </div>
           </div>
         </div>
       )}

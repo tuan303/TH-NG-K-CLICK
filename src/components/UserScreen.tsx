@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Book, Folder, Bell, Settings, Search, Menu } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, increment, addDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { Course } from '../types';
 
@@ -48,11 +48,18 @@ export default function UserScreen({ user }: UserScreenProps) {
       window.open(course.link, '_blank', 'noopener,noreferrer');
     }
     
-      // Increment clicks
+    // Increment clicks and record history
     try {
       const courseRef = doc(db, 'courses', course.id);
       await updateDoc(courseRef, {
         clicks: increment(1)
+      });
+      // Add a document to the clickHistory subcollection
+      const clickHistoryRef = collection(db, 'courses', course.id, 'clickHistory');
+      await addDoc(clickHistoryRef, {
+        email: user.email || 'unknown',
+        displayName: user.displayName || 'Học viên',
+        clickedAt: new Date().toISOString()
       });
     } catch (error) {
       console.error("Error incrementing click:", error);
