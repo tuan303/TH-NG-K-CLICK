@@ -3,12 +3,12 @@ import {
   Menu, UserCircle, BarChart2, BookOpen, Trophy, 
   LayoutDashboard, BookText, Users, Settings, Edit, Trash2, 
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  Search, Bell
+  Search, Bell, RotateCcw
 } from 'lucide-react';
 import CourseManagement from './CourseManagement';
 import AdminUsers from './AdminUsers';
 import { db } from '../firebase';
-import { collection, onSnapshot, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { Course } from '../types';
 
@@ -70,6 +70,39 @@ export default function AdminScreen({ user }: AdminScreenProps) {
       fetchTopUsers();
     }
   }, [courses]);
+
+  const [resetting, setResetting] = useState(false);
+
+  const handleResetStatistics = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa tất cả thống kê lượt xem từ trước tới nay? Dữ liệu này không thể khôi phục.")) {
+      return;
+    }
+    setResetting(true);
+    try {
+      const batchPromises = courses.map(async (course) => {
+        const courseRef = doc(db, 'courses', course.id);
+        const historySnapshot = await getDocs(collection(db, 'courses', course.id, 'clickHistory'));
+        
+        const deletePromises = historySnapshot.docs.map(historyDoc => 
+          deleteDoc(doc(db, 'courses', course.id, 'clickHistory', historyDoc.id))
+        );
+        await Promise.all(deletePromises);
+        
+        if (course.clicks !== 0) {
+           await updateDoc(courseRef, { clicks: 0 });
+        }
+      });
+      
+      await Promise.all(batchPromises);
+      alert("Đã xóa dữ liệu thống kê thành công.");
+      setTopUsers([]);
+    } catch (error) {
+      console.error("Lỗi khi xóa thống kê:", error);
+      alert("Đã xảy ra lỗi khi xóa dữ liệu. Vui lòng thử lại sau.");
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const totalClicks = courses.reduce((acc, course) => acc + (course.clicks || 0), 0);
   const activeCourses = courses.length;
@@ -157,6 +190,19 @@ export default function AdminScreen({ user }: AdminScreenProps) {
           
           {activeTab === 'dashboard' && (
             <>
+              <div className="flex justify-between items-center mb-4">
+                 <h2 className="text-xl font-semibold text-gray-800">Thống kê tổng quan</h2>
+                 <button
+                  onClick={handleResetStatistics}
+                  disabled={resetting}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors text-sm font-medium disabled:opacity-50 shadow-sm"
+                  title="Xóa toàn bộ dữ liệu lượt xem"
+                 >
+                  <RotateCcw className={`w-4 h-4 ${resetting ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">{resetting ? 'Đang xóa...' : 'Reset Thống kê'}</span>
+                 </button>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 {/* Full width card (stretches on mobile, col-span-1 on desktop) */}
                 <div className="bg-white p-5 md:p-6 rounded-2xl md:rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden md:col-span-1">
