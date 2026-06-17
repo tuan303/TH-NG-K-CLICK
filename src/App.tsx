@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import UserScreen from './components/UserScreen';
 import AdminScreen from './components/AdminScreen';
 import { auth, microsoftProvider } from './firebase';
-import { signInWithPopup, signInWithRedirect, getRedirectResult, User, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithPopup, User, signOut, onAuthStateChanged } from 'firebase/auth';
 import { BookOpen, LogOut } from 'lucide-react';
 
 export default function App() {
@@ -23,13 +23,17 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleLogin = async () => {
+  const handleLoginPopup = async () => {
     try {
       setLoading(true);
       await signInWithPopup(auth, microsoftProvider);
     } catch (error: any) {
       console.error("Lỗi đăng nhập MS:", error);
-      alert(`Đăng nhập thất bại.\nChi tiết: ${error.message}`);
+      if (error.code === 'auth/popup-closed-by-user') {
+         console.warn("Popup closed");
+      } else {
+         alert(`Đăng nhập thất bại.\nChi tiết: ${error.message}`);
+      }
       setLoading(false);
     }
   };
@@ -50,11 +54,11 @@ export default function App() {
             Hệ thống quản lý tài nguyên học tập của Ngôi Sao Hoàng Mai
           </p>
           <button
-            onClick={handleLogin}
+            onClick={handleLoginPopup}
             className="w-full flex justify-center items-center gap-3 bg-[#2F2F2F] hover:bg-[#1A1A1A] transition-colors text-white py-3 px-4 rounded-xl font-semibold shadow-sm"
           >
             <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" className="w-5 h-5 bg-white p-0.5" />
-            Đăng nhập với Microsoft 365
+            Đăng nhập với Microsoft
           </button>
         </div>
       </div>
