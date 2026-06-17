@@ -8,7 +8,7 @@ import {
 import CourseManagement from './CourseManagement';
 import AdminUsers from './AdminUsers';
 import { db } from '../firebase';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, getDocs } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { Course } from '../types';
 
@@ -20,6 +20,7 @@ export default function AdminScreen({ user }: AdminScreenProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'courses' | 'users'>('courses');
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [topUsers, setTopUsers] = useState<{email: string, displayName: string, count: number}[]>([]);
 
   useEffect(() => {
     const q = query(collection(db, 'courses'), orderBy('stt', 'asc'));
@@ -33,6 +34,42 @@ export default function AdminScreen({ user }: AdminScreenProps) {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const fetchTopUsers = async () => {
+      const userClicks: Record<string, {displayName: string, count: number}> = {};
+      
+      const promises = courses.map(async (course) => {
+        try {
+          const historySnapshot = await getDocs(collection(db, 'courses', course.id, 'clickHistory'));
+          historySnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.email) {
+              if (!userClicks[data.email]) {
+                userClicks[data.email] = { displayName: data.displayName || data.email, count: 0 };
+              }
+              userClicks[data.email].count += 1;
+            }
+          });
+        } catch (error) {
+          console.error("Error fetching clickHistory for course", course.id, error);
+        }
+      });
+      
+      await Promise.all(promises);
+      
+      const sortedUsers = Object.entries(userClicks)
+        .map(([email, data]) => ({ email, displayName: data.displayName, count: data.count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5); // top 5 users
+        
+      setTopUsers(sortedUsers);
+    };
+    
+    if (courses.length > 0) {
+      fetchTopUsers();
+    }
+  }, [courses]);
 
   const totalClicks = courses.reduce((acc, course) => acc + (course.clicks || 0), 0);
   const activeCourses = courses.length;
@@ -148,7 +185,7 @@ export default function AdminScreen({ user }: AdminScreenProps) {
                 </div>
 
                 {/* Other Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-2 col-span-1 md:col-span-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 col-span-1 md:col-span-2 gap-4">
                   <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-center">
                     <div className="flex justify-between items-start mb-2">
                       <div className="text-gray-500 text-sm font-medium">Active Courses</div>
@@ -165,6 +202,19 @@ export default function AdminScreen({ user }: AdminScreenProps) {
                     </div>
                     <div className="text-[16px] md:text-lg font-bold mb-1 leading-tight tracking-tight text-gray-900 line-clamp-1">{loading ? '...' : topCourseTitle}</div>
                     <div className="text-[12px] text-gray-500 font-medium">{loading ? '...' : topCourseClicks} Clicks</div>
+                  </div>
+
+                  <div className="bg-white p-4 md:p-6 rounded-2xl md:rounded-xl shadow-sm border border-gray-100 relative overflow-hidden flex flex-col justify-center sm:col-span-2 md:col-span-1">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="text-gray-500 text-sm font-medium leading-tight pr-2">Top User View</div>
+                      <div className="p-2 bg-purple-50 rounded-lg"><Users className="text-purple-500 w-5 h-5" /></div>
+                    </div>
+                    <div className="text-[16px] md:text-lg font-bold mb-1 leading-tight tracking-tight text-gray-900 line-clamp-1">
+                      {topUsers.length > 0 ? topUsers[0].displayName : 'Chưa có'}
+                    </div>
+                    <div className="text-[12px] text-gray-500 font-medium">
+                      {topUsers.length > 0 ? `${topUsers[0].count} Clicks tổng` : '0 Clicks'}
+                    </div>
                   </div>
                 </div>
               </div>
