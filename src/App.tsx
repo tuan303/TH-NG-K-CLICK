@@ -78,8 +78,8 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#F3F4F6] flex flex-col justify-center items-center font-sans p-6">
         <div className="bg-white p-10 rounded-2xl shadow-xl max-w-md w-full flex flex-col items-center text-center">
-          <div className="bg-[#243b73] p-4 rounded-2xl mb-6 shadow-md">
-            <BookOpen className="w-10 h-10 text-white" />
+          <div className="mb-6">
+            <img src="https://hoangmaistarschool.edu.vn/storage/general/logo.svg" alt="Ngôi Sao Hoàng Mai" className="h-16" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-2">Đăng nhập EduTrack</h1>
           <p className="text-sm text-gray-500 mb-8 max-w-xs">
@@ -87,7 +87,7 @@ export default function App() {
           </p>
           <button
             onClick={handleLoginPopup}
-            className="w-full flex justify-center items-center gap-3 bg-[#2F2F2F] hover:bg-[#1A1A1A] transition-colors text-white py-3 px-4 rounded-xl font-semibold shadow-sm"
+            className="w-full flex justify-center items-center gap-3 bg-[#23328c] hover:bg-[#1a2569] transition-colors text-white py-3 px-4 rounded-xl font-semibold shadow-sm"
           >
             <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" className="w-5 h-5 bg-white p-0.5" />
             Đăng nhập với Microsoft
