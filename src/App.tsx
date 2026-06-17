@@ -16,11 +16,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getRedirectResult(auth).catch((error) => {
-      console.error("Redirect login error:", error);
-      alert(`Lỗi đăng nhập: ${error.message}`);
-    });
-
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -31,11 +26,11 @@ export default function App() {
   const handleLogin = async () => {
     try {
       setLoading(true);
-      await signInWithRedirect(auth, microsoftProvider);
+      await signInWithPopup(auth, microsoftProvider);
     } catch (error: any) {
       console.error("Lỗi đăng nhập MS:", error);
-      setLoading(false);
       alert(`Đăng nhập thất bại.\nChi tiết: ${error.message}`);
+      setLoading(false);
     }
   };
 
