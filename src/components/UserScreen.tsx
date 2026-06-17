@@ -2,9 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { BookOpen, Book, Folder, Bell, Settings, Search, Menu } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, increment } from 'firebase/firestore';
+import { User } from 'firebase/auth';
 import { Course } from '../types';
 
-export default function UserScreen() {
+interface UserScreenProps {
+  user: User;
+}
+
+export default function UserScreen({ user }: UserScreenProps) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCourses, setNewCourses] = useState<Course[]>([]);
@@ -133,19 +138,25 @@ export default function UserScreen() {
             {/* Profile Info */}
             <div className="flex items-center gap-4">
               <div className="hidden md:block text-right">
-                <div className="font-semibold text-sm">Nguyễn Văn A</div>
-                <div className="text-xs text-gray-500 font-medium">Giáo viên</div>
+                <div className="font-semibold text-sm">{user.displayName || 'Học viên'}</div>
+                <div className="text-xs text-gray-500 font-medium">{user.email}</div>
               </div>
               <div className="relative cursor-pointer">
                 <div className="w-11 h-11 md:w-10 md:h-10 rounded-full border-[3px] md:border-2 border-[#243b73] md:border-gray-200 overflow-hidden bg-gray-200 shadow-sm shadow-black/20 md:shadow-none ring-2 md:ring-0 ring-white">
-                  <img 
-                    src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&auto=format&fit=crop&q=80" 
-                    alt="Teacher" 
-                    className="w-full h-full object-cover object-top"
-                  />
+                  {user.photoURL ? (
+                    <img 
+                      src={user.photoURL} 
+                      alt={user.displayName || 'Avatar'} 
+                      className="w-full h-full object-cover object-top"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-[#243b73] text-white flex items-center justify-center font-bold text-lg">
+                      {(user.displayName || user.email || 'A').charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </div>
                 <div className="md:hidden absolute -bottom-1 -right-1 bg-white text-[#243b73] text-[9px] font-extrabold rounded-full w-5 h-5 flex items-center justify-center border border-gray-200 shadow-sm leading-none pt-[1px]">
-                  GV
+                  HV
                 </div>
               </div>
             </div>

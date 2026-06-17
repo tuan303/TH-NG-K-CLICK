@@ -6,22 +6,44 @@
 import { useState, useEffect } from 'react';
 import UserScreen from './components/UserScreen';
 import AdminScreen from './components/AdminScreen';
-import { auth, microsoftProvider } from './firebase';
+import { auth, microsoftProvider, db } from './firebase';
 import { signInWithPopup, User, signOut, onAuthStateChanged } from 'firebase/auth';
-import { BookOpen, LogOut } from 'lucide-react';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { BookOpen, LogOut, Loader2 } from 'lucide-react';
 
 export default function App() {
   const [view, setView] = useState<'user' | 'admin'>('user');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setLoading(false);
+      if (!currentUser) {
+        setLoading(false);
+        setIsAdmin(false);
+      }
     });
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, []);
+
+  useEffect(() => {
+    let unsubscribeAdmin: () => void = () => {};
+    if (user && user.email) {
+      if (user.email === 'tuantm@hoangmaistarschool.edu.vn') {
+        setIsAdmin(true);
+        setLoading(false);
+      } else {
+        // Listen to admin document for this user to check admin status
+        unsubscribeAdmin = onSnapshot(doc(db, 'admins', user.email.toLowerCase()), (docSnap) => {
+          setIsAdmin(docSnap.exists());
+          setLoading(false);
+        });
+      }
+    }
+    return () => unsubscribeAdmin();
+  }, [user]);
 
   const handleLoginPopup = async () => {
     try {
@@ -46,7 +68,10 @@ export default function App() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-gray-50 flex justify-center items-center">Đang tải...</div>;
+    return <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center gap-4 text-gray-500">
+      <Loader2 className="w-8 h-8 animate-spin text-[#243b73]" />
+      <span>Đang tải dữ liệu...</span>
+    </div>;
   }
 
   if (!user) {
@@ -75,7 +100,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <div className="flex-1 w-full flex flex-col">
-        {view === 'user' ? <UserScreen /> : <AdminScreen />}
+        {view === 'user' ? <UserScreen user={user} /> : <AdminScreen user={user} />}
       </div>
 
       {/* View Controllers (Floating toggle) */}
@@ -87,18 +112,22 @@ export default function App() {
           <LogOut className="w-4 h-4" />
           Đăng xuất
         </button>
-        <button 
-          onClick={() => setView('user')} 
-          className={`px-4 py-2 rounded-xl font-medium text-sm shadow-lg transition-all border ${view === 'user' ? 'bg-[#243b73] text-white border-[#243b73] scale-105' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'}`}
-        >
-          🎓 User View
-        </button>
-        <button 
-          onClick={() => setView('admin')} 
-          className={`px-4 py-2 rounded-xl font-medium text-sm shadow-lg transition-all border ${view === 'admin' ? 'bg-[#1554A1] text-white border-[#1554A1] scale-105' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'}`}
-        >
-          ⚙️ Admin View
-        </button>
+        {isAdmin && (
+          <>
+            <button 
+              onClick={() => setView('user')} 
+              className={`px-4 py-2 rounded-xl font-medium text-sm shadow-lg transition-all border ${view === 'user' ? 'bg-[#243b73] text-white border-[#243b73] scale-105' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'}`}
+            >
+              🎓 User View
+            </button>
+            <button 
+              onClick={() => setView('admin')} 
+              className={`px-4 py-2 rounded-xl font-medium text-sm shadow-lg transition-all border ${view === 'admin' ? 'bg-[#1554A1] text-white border-[#1554A1] scale-105' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'}`}
+            >
+              ⚙️ Admin View
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

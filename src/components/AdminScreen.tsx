@@ -6,12 +6,18 @@ import {
   Search, Bell
 } from 'lucide-react';
 import CourseManagement from './CourseManagement';
+import AdminUsers from './AdminUsers';
 import { db } from '../firebase';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { User } from 'firebase/auth';
 import { Course } from '../types';
 
-export default function AdminScreen() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'courses'>('courses');
+interface AdminScreenProps {
+  user: User;
+}
+
+export default function AdminScreen({ user }: AdminScreenProps) {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'courses' | 'users'>('courses');
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -65,7 +71,10 @@ export default function AdminScreen() {
             <BarChart2 className="w-5 h-5" />
             <span className="font-medium text-[15px]">Analytics</span>
           </div>
-          <div className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors text-blue-200 hover:text-white">
+          <div 
+            onClick={() => setActiveTab('users')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-colors ${activeTab === 'users' ? 'bg-white/10 shadow-inner' : 'text-blue-200 hover:bg-white/5 hover:text-white'}`}
+          >
             <Users className="w-5 h-5" />
             <span className="font-medium text-[15px]">Users</span>
           </div>
@@ -96,12 +105,20 @@ export default function AdminScreen() {
 
           <div className="flex items-center gap-4">
             <Bell className="w-6 h-6 text-gray-500 cursor-pointer hidden md:block hover:text-gray-700 transition" />
-            <div className="flex items-center gap-2 cursor-pointer">
-              <div className="hidden md:block text-right mr-1">
-                <div className="font-semibold text-sm leading-none">Admin User</div>
+            <div className="flex items-center gap-3 cursor-pointer">
+              <div className="hidden md:block text-right">
+                <div className="font-semibold text-sm leading-none">{user.displayName || 'Admin'}</div>
                 <div className="text-xs text-gray-500 font-medium">Administrator</div>
               </div>
-              <UserCircle className="w-8 h-8 opacity-90 md:opacity-100 md:text-gray-400" />
+              <div className="w-9 h-9 rounded-full border-2 border-gray-200 overflow-hidden bg-gray-200 shrink-0 flex items-center justify-center">
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt={user.displayName || 'Avatar'} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full text-[#1554A1] font-bold fill-current bg-blue-100 flex items-center justify-center text-sm">
+                    {(user.displayName || user.email || 'A').charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -159,6 +176,10 @@ export default function AdminScreen() {
             <CourseManagement />
           )}
 
+          {activeTab === 'users' && (
+            <AdminUsers />
+          )}
+
         </div>
 
         {/* Mobile Bottom Navigation (hidden on desktop) */}
@@ -183,9 +204,13 @@ export default function AdminScreen() {
             <BarChart2 className="w-[22px] h-[22px] text-gray-400" />
             <span className="text-[10px] font-medium text-gray-400">Analytics</span>
           </div>
-          <div className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5">
-            <Users className="w-[22px] h-[22px] text-gray-400" />
-            <span className="text-[10px] font-medium text-gray-400">Users</span>
+          <div 
+            onClick={() => setActiveTab('users')}
+            className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5 relative"
+          >
+            {activeTab === 'users' && <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-10 h-[3px] bg-[#1554A1] rounded-b-md"></div>}
+            <Users className={`w-[22px] h-[22px] ${activeTab === 'users' ? 'text-[#1554A1] fill-[#1554A1]/20' : 'text-gray-400'}`} />
+            <span className={`text-[10px] ${activeTab === 'users' ? 'font-semibold text-[#1554A1]' : 'font-medium text-gray-400'}`}>Users</span>
           </div>
           <div className="flex flex-col items-center justify-center gap-[5px] cursor-pointer w-1/5">
             <Settings className="w-[22px] h-[22px] text-gray-400" />
