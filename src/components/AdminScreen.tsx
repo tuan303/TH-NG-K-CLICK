@@ -192,7 +192,7 @@ export default function AdminScreen({ user }: AdminScreenProps) {
             <>
               <div className="flex justify-between items-center mb-4">
                  <h2 className="text-xl font-semibold text-gray-800">Thống kê tổng quan</h2>
-                 <button
+                 {/* <button
                   onClick={handleResetStatistics}
                   disabled={resetting}
                   className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors text-sm font-medium disabled:opacity-50 shadow-sm"
@@ -200,7 +200,7 @@ export default function AdminScreen({ user }: AdminScreenProps) {
                  >
                   <RotateCcw className={`w-4 h-4 ${resetting ? 'animate-spin' : ''}`} />
                   <span className="hidden sm:inline">{resetting ? 'Đang xóa...' : 'Reset Thống kê'}</span>
-                 </button>
+                 </button> */}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
